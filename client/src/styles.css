@@ -1,0 +1,95 @@
+:root {
+  --base-white: #EEF;
+  --base-font-size: 2vh;
+  --base-font-family: Arial, Liberation Sans, Sans Serif;
+  --base-background-color: #303040;
+  --background-highlight1-color: #585874;
+  --background-highlight2-color: #636383;
+}
+
+body {
+  background-image: url("./background.png");
+  font-size: var(--base-font-size);
+  font-family: var(--base-font-family);
+  color: var(--base-white);
+}
+
+h1 {
+  margin: .5em;
+  font-size: 3em;
+  font-style: italic;
+}
+
+input {
+  border-color: var(--base-white);
+  border-radius: .3em;
+  padding: .2em;
+  font-size: var(--base-font-size);
+  font-family: var(--base-font-family);
+  color: var(--base-white);
+  background-color: var(--base-background-color);
+}
+
+input:disabled {
+  border-style: solid;
+  border-color: gray;
+}
+
+button {
+  margin: 0 .5em;
+  border-color: var(--base-white);
+  border-width: 2px;
+  border-radius: .3em;
+  padding: .2em;
+  font-size: var(--base-font-size);
+  font-family: var(--base-font-family);
+  color: var(--base-white);
+  background-color: var(--base-background-color);
+}
+
+button:focus {
+  background-color: var(--background-highlight1-color);
+}
+
+button:not([disabled]):hover {
+  background-color: var(--background-highlight2-color);
+}
+
+button:disabled {
+  border-style: solid;
+  border-color: gray;
+}
+
+div.floatWrapper::after {
+  /* Add zero-height content after a div to clear float behavior */
+  content: " ";
+  height: 0;
+  clear: both;
+}
+
+.cell {
+  /* float forces block; box-sizing allows width and height to include border and padding which forces button to behave consistently */
+  float: left;
+  margin: 0;
+  box-sizing: border-box;
+  width: 2.5em;
+  height: 2em;
+  border-width: 2px;
+  border-color: var(--base-white);
+  padding: .2em;
+}
+
+span.cell {
+  border-style: solid;
+  border-color: var(--base-white);
+  border-radius: .3em;
+  text-align: right;
+}
+
+.w10 {
+  width: 10em;
+}
+
+.w15 {
+  width: 15em;
+}

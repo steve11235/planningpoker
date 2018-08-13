@@ -1,0 +1,24 @@
+<img src="assets/pp.png" style="float: left; margin-right: 2vh; height: 25vh;">
+<div style="float:left;">
+  <h1>Time to Vote!</h1>
+  <p><span class="blink">&gt;&gt;</span>&nbsp;{{serverUpdate.message}}</p>
+  <p>
+    <label>Voter name:</label>
+    <input class="w10" [(ngModel)]="voterName" [disabled]="isJoined">
+    <button (click)="onJoinLeave()">{{isJoined ? "Leave" : "Join"}}</button>
+  </p>
+  <p>
+    <button (click)="onStartVote()" [disabled]="!isReadyToVote()">Start Voting</button>
+    <button (click)="onCloseVote()" [disabled]="!isVoteInProgress()">Close Voting</button>
+    <button (click)="onCancelVote()" [disabled]="!isVoteInProgress()">Cancel Voting</button>
+    <button (click)="onRefresh()" [disabled]="!isReadyToVote()">Refresh</button>
+  </p>
+  <div class="floatWrapper">
+    <span class="cell w10"><i>Voters</i></span>
+    <button class="cell" [ngClass]="calculateOffByClass(i, i)" [disabled]="!isVoteInProgress()" (click)="onVote(i)" *ngFor="let voteLabel of voteLabels; let i = index;">{{voteLabel}}</button>
+  </div>
+  <div class="floatWrapper" *ngFor="let voter of serverUpdate.voters">
+    <span class="cell w10" [ngClass]="isYetToVote(voter) ? 'yetToVote' : ''">{{voter.name}}</span>
+    <span class="cell" [ngClass]="calculateOffByClass(voter.vote, i)" *ngFor="let voteLabel of voteLabels; let i = index;">&nbsp;</span>
+  </div>
+</div>

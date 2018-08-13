@@ -1,0 +1,32 @@
+@keyframes blink {
+	0% { color: inherit }
+	50% { color: transparent }
+}
+
+.blink {
+	animation-name: blink;
+	animation-duration: 2000ms;
+	animation-iteration-count: infinite;
+}
+
+.yetToVote {
+	color: #AAF;
+}
+
+.offBy0 {
+	color: black;
+	background-color: #0F0;
+}
+
+.offBy1 {
+	color: black;
+	background-color: #0FF;
+}
+
+.offBy2 {
+	background-color: #05F;
+}
+
+.offBy3 {
+	background-color: #00F;
+}

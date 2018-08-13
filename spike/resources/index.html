@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Planning Poker</title>
+<style>
+body {
+	background-image: url("background.png");
+	background-repeat: repeat; 
+}
+
+h1 {
+	line-height: 15vh;
+	color: #FFF;
+	font-style: italic;
+}
+
+.wrapper {
+	overflow: hidden;
+}
+
+.wrapper:after {
+	display: block;
+	clear: both;
+	height: 0;
+	overflow: hidden;
+	content: ".";
+	font-size: 0;
+}
+
+.cell {
+	display: inline-block;
+	float: left;
+	border-style: solid;
+	border-width: 1px; border-radius : 3px;
+	border-color: #4040FF;
+	background-color: #FFF;
+	padding: .25em;
+	height: 1.5em;
+	text-align: center;
+	padding: .25em;
+	border-radius: 3px;
+}
+
+.mean {
+	background-color: #4F4;
+}
+
+.close {
+	background-color: #4FF;
+}
+
+.far {
+	background-color: #48F;
+}
+
+.wayFar {
+	background-color: #44F;
+}
+
+.w3 {
+	width: 3em;
+}
+
+.w10 {
+	width: 10em;
+}
+</style>
+</head>
+<body>
+	<div style="position: relative; height: 15vh; margin-bottom: 1em;">
+		<img src="pp.png"
+			style="float: left; margin-right: 2em; height: 100%; width: auto;"></img>
+		<h1>Time to Vote!</h1>
+	</div>
+	<div style="position: relative; margin-bottom: 1em;">
+		<form method="post" action="/join" target="_blank">
+			<span style="color: #FFF">Voter name:</span>
+			<input name="voterName" type="text"/>
+			<button type="submit">Join</button>
+		</form>
+	</div>
+	<div class="wrapper">
+		<span class="cell w10"> &nbsp; </span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">?</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">.5</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">1</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">2</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">3</button>
+		</span> <span class="cell w3 mean">
+			<button style="width: 100%; height: 100%">5</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">8</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">13</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">20</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">40</button>
+		</span> <span class="cell w3">
+			<button style="width: 100%; height: 100%">100</button>
+		</span>
+	</div>
+	<div class="wrapper">
+		<span class="cell w10"> Larry </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3 wayFar">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span
+			class="cell w3"> &nbsp; </span> <span class="cell w3"> &nbsp;
+		</span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span>
+	</div>
+	<div class="wrapper">
+		<span class="cell w10"> Curly </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span
+			class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3 close"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span>
+	</div>
+	<div class="wrapper">
+		<span class="cell w10"> Moe </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3 far"> &nbsp; </span> <span
+			class="cell w3"> &nbsp; </span> <span class="cell w3"> &nbsp;
+		</span> <span class="cell w3"> &nbsp; </span>
+	</div>
+	<div class="wrapper">
+		<span class="cell w10"> Lucy </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3 mean"> &nbsp; </span> <span
+			class="cell w3"> &nbsp; </span> <span class="cell w3"> &nbsp;
+		</span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span>
+	</div>
+	<div class="wrapper">
+		<span class="cell w10"> Ethel </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span
+			class="cell w3 close"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span> <span class="cell w3">
+			&nbsp; </span> <span class="cell w3"> &nbsp; </span>
+	</div>
+</body>
+</html>
