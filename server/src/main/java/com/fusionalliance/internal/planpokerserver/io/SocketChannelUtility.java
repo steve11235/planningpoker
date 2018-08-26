@@ -25,7 +25,7 @@ public final class SocketChannelUtility {
 	 * throughput, so this won't be an issue.
 	 * 
 	 * @param socketParm
-	 *            required
+	 *                   required
 	 * @return
 	 */
 	public static ByteBuffer readUnblocked(final SocketChannel socketParm) {
@@ -50,13 +50,11 @@ public final class SocketChannelUtility {
 
 				try {
 					Thread.sleep(READ_DELAY);
-				}
-				catch (final Exception e) {
+				} catch (final Exception e) {
 					// Do nothing
 				}
 			}
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Error reading socket.", e);
 		}
 		return buffer;
@@ -66,9 +64,9 @@ public final class SocketChannelUtility {
 	 * Write to a SocketChannel.
 	 * 
 	 * @param byteBufferParm
-	 *            not empty
+	 *                       not empty
 	 * @param socketParm
-	 *            not null
+	 *                       not null
 	 * @throws InternalException
 	 */
 	public static void writeToSocket(final ByteBuffer byteBufferParm, final SocketChannel socketParm) throws InternalException {
@@ -84,8 +82,7 @@ public final class SocketChannelUtility {
 		while (true) {
 			try {
 				socketParm.write(byteBufferParm);
-			}
-			catch (final Exception e) {
+			} catch (final Exception e) {
 				throw new InternalException("Error writing to the socket.", e);
 			}
 
@@ -95,8 +92,7 @@ public final class SocketChannelUtility {
 
 			try {
 				Thread.sleep(1);
-			}
-			catch (final Exception e) {
+			} catch (final Exception e) {
 				// do nothing
 			}
 		}

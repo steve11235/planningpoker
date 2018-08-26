@@ -10,9 +10,9 @@ public final class CheckCondition {
 	 * Check the condition and throw an exception if it is false.
 	 * 
 	 * @param condition
-	 *            The condition to evaluate, it is expected to be true
+	 *                  The condition to evaluate, it is expected to be true
 	 * @param message
-	 *            The exception message, if an exception is thrown
+	 *                  The exception message, if an exception is thrown
 	 * @throws ConditionNotMetException
 	 */
 	public static void check(final boolean condition, final String message) {

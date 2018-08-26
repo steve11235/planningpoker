@@ -63,8 +63,7 @@ public class CommunicationsServer {
 
 		try {
 			selector = Selector.open();
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Failed to open selector.", e);
 		}
 
@@ -73,8 +72,7 @@ public class CommunicationsServer {
 			serverSocket.configureBlocking(false);
 			serverSocket.bind(new InetSocketAddress(40080));
 			serverSocket.register(selector, SelectionKey.OP_ACCEPT);
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Failed to create server socket.", e);
 		}
 	}
@@ -100,11 +98,9 @@ public class CommunicationsServer {
 
 					if (key.isAcceptable()) {
 						handleAccept((ServerSocketChannel) key.channel());
-					}
-					else if (key.isReadable()) {
+					} else if (key.isReadable()) {
 						handleRead(key);
-					}
-					else {
+					} else {
 						System.err.println("Unexpected key operation: " + key.readyOps());
 					}
 
@@ -113,11 +109,9 @@ public class CommunicationsServer {
 
 				selectedKeyIterator = null;
 			}
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
-		}
-		finally {
+		} finally {
 			// Add close sockets logic here
 		}
 
@@ -138,8 +132,7 @@ public class CommunicationsServer {
 			socket.configureBlocking(false);
 			socket.setOption(StandardSocketOptions.TCP_NODELAY, Boolean.TRUE);
 			socket.register(selector, SelectionKey.OP_READ);
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Error accepting socket.", e);
 		}
 	}
@@ -198,8 +191,7 @@ public class CommunicationsServer {
 		final InputStream inputStream;
 		try {
 			inputStream = pathUrl.openStream();
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Unable to open input stream for resource: " + pathParm, e);
 		}
 
@@ -207,15 +199,13 @@ public class CommunicationsServer {
 		final String extension;
 		if (separator == -1) {
 			extension = "";
-		}
-		else {
+		} else {
 			extension = pathParm.substring(separator + 1);
 		}
 		final String contentType;
 		if (HttpUtility.CONTENT_TYPE_MAP.containsKey(extension)) {
 			contentType = HttpUtility.CONTENT_TYPE_MAP.get(extension);
-		}
-		else {
+		} else {
 			contentType = HttpUtility.CONTENT_TYPE_MAP.get("");
 		}
 
@@ -224,12 +214,10 @@ public class CommunicationsServer {
 					new HttpHeader("Content-Type", contentType) //
 			);
 			HttpUtility.writeToSocket("HTTP/1.1 200 OK", headers, inputStream, socketParm);
-		}
-		finally {
+		} finally {
 			try {
 				inputStream.close();
-			}
-			catch (final Exception e) {
+			} catch (final Exception e) {
 				// do nothing
 			}
 		}
@@ -253,8 +241,7 @@ public class CommunicationsServer {
 			socket.configureBlocking(true);
 			// We only read for ping/pong responses; expect them to come back quickly
 			socket.socket().setSoTimeout(500);
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Unable to configure WebSocket for blocking.", e);
 		}
 
@@ -283,7 +270,7 @@ public class CommunicationsServer {
 	 * Perform a WebSocket ping/pong. Return true if successful.
 	 * 
 	 * @param socketParm
-	 *            required
+	 *                   required
 	 * @return
 	 */
 	private boolean performWebSocketPing(final SocketChannel socketParm) {
@@ -298,8 +285,7 @@ public class CommunicationsServer {
 		final ByteBuffer readBuffer = ByteBuffer.allocate(100);
 		try {
 			socketParm.read(readBuffer);
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Unable to read from WebSocket.", e);
 		}
 
@@ -329,8 +315,7 @@ public class CommunicationsServer {
 
 		try {
 			clientRequest = GSON.fromJson(bodyParm, ClientRequest.class);
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content not recognized: " + bodyParm,
 					socketParm);
 
@@ -369,7 +354,7 @@ public class CommunicationsServer {
 	 * Broadcast the server update to all connected voters.
 	 * 
 	 * @param serverUpdateParm
-	 *            required
+	 *                         required
 	 */
 	public void broadcastServerUpdate(final ServerUpdate serverUpdateParm) {
 		check(serverUpdateParm != null, "The server update may not be null.");
@@ -395,8 +380,7 @@ public class CommunicationsServer {
 		SocketChannelUtility.writeToSocket(closeRequestFrame.getReadOnlyBuffer(), socket);
 		try {
 			socket.close();
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			// Do nothing
 		}
 	}

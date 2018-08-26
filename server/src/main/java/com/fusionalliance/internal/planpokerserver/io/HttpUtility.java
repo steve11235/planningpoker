@@ -44,13 +44,13 @@ public final class HttpUtility {
 	 * Write to a SocketChannel.
 	 * 
 	 * @param responseStatusParm
-	 *            required
+	 *                           required
 	 * @param headersParm
-	 *            required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
+	 *                           required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
 	 * @param bodyParm
-	 *            null or empty if no body
+	 *                           null or empty if no body
 	 * @param socketParm
-	 *            required
+	 *                           required
 	 * @throws InternalException
 	 */
 	public static void writeToSocket(final String responseStatusParm, final List<HttpHeader> headersParm, final String bodyParm,
@@ -59,8 +59,7 @@ public final class HttpUtility {
 
 		if (StringUtils.isEmpty(bodyParm)) {
 			bodyBytes = new byte[0];
-		}
-		else {
+		} else {
 			bodyBytes = bodyParm.getBytes(UTF_8);
 		}
 
@@ -71,13 +70,13 @@ public final class HttpUtility {
 	 * Write to a SocketChannel.
 	 * 
 	 * @param responseStatusParm
-	 *            required
+	 *                           required
 	 * @param headersParm
-	 *            required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
+	 *                           required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
 	 * @param bodyBytesParm
-	 *            required, may be empty
+	 *                           required, may be empty
 	 * @param socketParm
-	 *            required
+	 *                           required
 	 * @throws InternalException
 	 */
 	public static void writeToSocket(final String responseStatusParm, final List<HttpHeader> headersParm, final byte[] bodyBytesParm,
@@ -111,13 +110,13 @@ public final class HttpUtility {
 	 * Write to a SocketChannel.
 	 * 
 	 * @param responseStatusParm
-	 *            required
+	 *                           required
 	 * @param headersParm
-	 *            required, may be empty
+	 *                           required, may be empty
 	 * @param bodyStreamParm
-	 *            required; always closed before method return
+	 *                           required; always closed before method return
 	 * @param socketParm
-	 *            required
+	 *                           required
 	 * @throws InternalException
 	 */
 	public static void writeToSocket(final String responseStatusParm, final List<HttpHeader> headersParm, final InputStream bodyStreamParm,
@@ -127,8 +126,7 @@ public final class HttpUtility {
 		final BufferedInputStream bufferedBodyStream;
 		if (bodyStreamParm instanceof BufferedInputStream) {
 			bufferedBodyStream = (BufferedInputStream) bodyStreamParm;
-		}
-		else {
+		} else {
 			bufferedBodyStream = new BufferedInputStream(bodyStreamParm);
 		}
 
@@ -171,15 +169,12 @@ public final class HttpUtility {
 			bodyBuffer.put(CRLF_BYTES);
 
 			SocketChannelUtility.writeToSocket(bodyBuffer, socketParm);
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Failure during chunked write.", e);
-		}
-		finally {
+		} finally {
 			try {
 				bufferedBodyStream.close();
-			}
-			catch (final Exception e) {
+			} catch (final Exception e) {
 				// Do nothing
 			}
 		}

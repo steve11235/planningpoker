@@ -20,7 +20,7 @@ public class ServerResponse {
 	 * Error constructor
 	 * 
 	 * @param messageParm
-	 *            required
+	 *                    required
 	 */
 	public ServerResponse(final String messageParm) {
 		CheckCondition.check(StringUtils.isNotBlank(messageParm), "The error message is blank.");

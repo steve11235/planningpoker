@@ -25,8 +25,7 @@ public class Application {
 	public void run() {
 		try {
 			communicationsServer.run();
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			e.printStackTrace();
 		}
 	}
@@ -35,7 +34,7 @@ public class Application {
 	 * Handle a voter joined event. See {@link VoterJoinedListener#voterJoined(String)}.
 	 * 
 	 * @param voterNameParm
-	 *            required
+	 *                      required
 	 */
 	private void handleVoterJoined(final String voterNameParm) {
 		communicationsServer.addConnectPendingVoter(voterNameParm);
@@ -45,7 +44,7 @@ public class Application {
 	 * Handle a voter connected event. See {@link VoterConnectedListener#voterConnected(String)}.
 	 * 
 	 * @param voterNameParm
-	 *            required
+	 *                      required
 	 */
 	private void handleVoterConnected(final String voterNameParm) {
 		model.doConnected(voterNameParm);
@@ -55,7 +54,7 @@ public class Application {
 	 * Handle a voter left event. See {@link VoterLeftListener#voterLeft(String)}.
 	 * 
 	 * @param voterNameParm
-	 *            required
+	 *                      required
 	 */
 	private void handleVoterLeft(final String voterNameParm) {
 		communicationsServer.removeConnectedVoter(voterNameParm);

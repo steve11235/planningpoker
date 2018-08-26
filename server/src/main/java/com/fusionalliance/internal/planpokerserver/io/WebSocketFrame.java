@@ -41,10 +41,10 @@ public class WebSocketFrame {
 	 * 
 	 * @param finishedParm
 	 * @param opCodeParm
-	 *            required
+	 *                     required
 	 * @param maskedParm
 	 * @param payloadParm
-	 *            required, length < =10k
+	 *                     required, length < =10k
 	 */
 	public WebSocketFrame(final boolean finishedParm, final WebSocketOpCode opCodeParm, final boolean maskedParm, final byte[] payloadParm) {
 		check(opCodeParm != null, "OP code is null.");
@@ -71,8 +71,7 @@ public class WebSocketFrame {
 		// MASK, byte payload length
 		if (payloadLength < 126) {
 			currentByte = (byte) payloadLength;
-		}
-		else {
+		} else {
 			currentByte = (byte) 126;
 		}
 		if (masked) {
@@ -86,8 +85,7 @@ public class WebSocketFrame {
 
 		if (!masked) {
 			mask = new byte[] { 0, 0, 0, 0 };
-		}
-		else {
+		} else {
 			mask = generateMask();
 
 			tempBuffer.put(mask[0]);
@@ -109,7 +107,7 @@ public class WebSocketFrame {
 	 * Constructor from an incoming message.
 	 *
 	 * @param requestBufferParm
-	 *            required, must be flipped, no side-effects on passed buffer
+	 *                          required, must be flipped, no side-effects on passed buffer
 	 */
 	public WebSocketFrame(final ByteBuffer requestBufferParm) {
 		check(requestBufferParm != null, "Request ByteBuffer is null.");
@@ -135,11 +133,9 @@ public class WebSocketFrame {
 
 		if (bytePayloadLength < 126) {
 			payloadLength = bytePayloadLength;
-		}
-		else if (bytePayloadLength == 126) {
+		} else if (bytePayloadLength == 126) {
 			payloadLength = readOnlyBuffer.getShort();
-		}
-		else {
+		} else {
 			// 127: We support this only in case a caller always uses this format, even for reasonable values
 			final long longPayloadLength = readOnlyBuffer.getLong();
 			payloadLength = (longPayloadLength <= Integer.MAX_VALUE ? (int) longPayloadLength : Integer.MAX_VALUE);

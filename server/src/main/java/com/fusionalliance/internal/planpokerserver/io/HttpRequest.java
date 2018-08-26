@@ -39,7 +39,7 @@ public class HttpRequest {
 	 * Constructor
 	 * 
 	 * @param bufferParm
-	 *            a ByteBuffer containing the request bytes; it <b>must</b> be flipped
+	 *                   a ByteBuffer containing the request bytes; it <b>must</b> be flipped
 	 */
 	public HttpRequest(final ByteBuffer bufferParm) {
 		check(bufferParm != null && bufferParm.limit() > 0, "The buffer passed is null or empty.");
@@ -60,8 +60,7 @@ public class HttpRequest {
 
 		try {
 			method = HttpRequestMethods.valueOf(startLinePieces[0]);
-		}
-		catch (final Exception e) {
+		} catch (final Exception e) {
 			throw new InternalException("Unknown request method: " + startLinePieces[0]);
 		}
 
@@ -84,8 +83,7 @@ public class HttpRequest {
 		bufferParm.position(startBodyIndex);
 		if (bufferParm.remaining() == 0) {
 			body = null;
-		}
-		else {
+		} else {
 			final byte[] bodyBytes = new byte[bufferParm.remaining()];
 			bufferParm.get(bodyBytes);
 			body = new String(bodyBytes, StandardCharsets.UTF_8);
@@ -96,7 +94,7 @@ public class HttpRequest {
 	 * Return a list decoded of path steps.
 	 * 
 	 * @param pathParm
-	 *            required
+	 *                 required
 	 * @return
 	 */
 	private List<String> parsePath(String pathParm) {
@@ -109,8 +107,7 @@ public class HttpRequest {
 		for (int i = 1; i < pathSplits.length; i++) {
 			try {
 				pathSteps.add(URLDecoder.decode(pathSplits[i], StandardCharsets.UTF_8.name()));
-			}
-			catch (final Exception e) {
+			} catch (final Exception e) {
 				throw new InternalException("Error decoding path step: " + pathSplits[i], e);
 			}
 		}

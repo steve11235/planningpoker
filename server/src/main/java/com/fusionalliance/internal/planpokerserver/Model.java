@@ -16,8 +16,6 @@ public class Model {
 
 	private static final String UNKNOWN_VOTER = "Unknown voter: ";
 
-	private static final String OK = "OK";
-
 	/** ?, .5, 1, 2, 3, 5, 8, 13, 20, 40, 100, zero-based */
 	public static final int MAX_VOTE = 10;
 
@@ -33,14 +31,13 @@ public class Model {
 	/**
 	 * Constructor
 	 * 
-	 * @param voterJoinedListenerParm
-	 *            required
-	 * @param voterLeftListenerParm
-	 *            required
-	 * @param serverUpdateListenerParm
-	 *            required
+	 * @param voterJoinedListenerParm  required
+	 * @param voterLeftListenerParm    required
+	 * @param serverUpdateListenerParm required
 	 */
-	public Model(final VoterJoinedListener voterJoinedListenerParm, final VoterLeftListener voterLeftListenerParm,
+	public Model(
+			final VoterJoinedListener voterJoinedListenerParm,
+			final VoterLeftListener voterLeftListenerParm,
 			final ServerUpdateListener serverUpdateListenerParm) {
 		voterJoinedListener = voterJoinedListenerParm;
 		voterLeftListener = voterLeftListenerParm;
@@ -50,8 +47,7 @@ public class Model {
 	/**
 	 * Cancel voting.
 	 * 
-	 * @param voterNameParm
-	 *            required
+	 * @param voterNameParm required
 	 * @return
 	 */
 	public ServerResponse doCancelVote(String voterNameParm) {
@@ -84,10 +80,10 @@ public class Model {
 	/**
 	 * Add the voter, step 1 of 2. See {@link #doConnected(String)}.
 	 * <p>
-	 * This is a standard request for the voter to join. If this request is successful, then the client must create a WebSocket connection.
+	 * This is a standard request for the voter to join. If this request is
+	 * successful, then the client must create a WebSocket connection.
 	 * 
-	 * @param voterNameParm
-	 *            required, must be unique
+	 * @param voterNameParm required, must be unique
 	 * @return null if joined; otherwise, an error message
 	 */
 	public ServerResponse doJoin(String voterNameParm) {
@@ -105,10 +101,10 @@ public class Model {
 	/**
 	 * Add the voter, step 2 of 2. See {@link #doJoin(String)}.
 	 * <p>
-	 * After the join request, the client creates a WebSocket connection; this method is invoked after that connection is complete.
+	 * After the join request, the client creates a WebSocket connection; this
+	 * method is invoked after that connection is complete.
 	 * 
-	 * @param voterNameParm
-	 *            required, must exist
+	 * @param voterNameParm required, must exist
 	 * @return null if success; otherwise, an error message
 	 */
 	public ServerResponse doConnected(String voterNameParm) {
@@ -217,8 +213,7 @@ public class Model {
 	/**
 	 * Generate a server update from the current model state.
 	 * 
-	 * @param messageParm
-	 *            required
+	 * @param messageParm required
 	 * @return
 	 */
 	private ServerUpdate generateServerUpdate(final String messageParm) {
@@ -239,21 +234,24 @@ public class Model {
 	}
 
 	/**
-	 * This interface defines the contract for classes that listen for voter joined events.
+	 * This interface defines the contract for classes that listen for voter joined
+	 * events.
 	 */
 	public interface VoterJoinedListener extends EventListener {
 		void voterJoined(final String voterName);
 	}
 
 	/**
-	 * This interface defines the contract for classes that listen for voter left events.
+	 * This interface defines the contract for classes that listen for voter left
+	 * events.
 	 */
 	public interface VoterLeftListener extends EventListener {
 		void voterLeft(final String voterName);
 	}
 
 	/**
-	 * This interface defines the contract for classes that listen for server updates events.
+	 * This interface defines the contract for classes that listen for server
+	 * updates events.
 	 */
 	public interface ServerUpdateListener extends EventListener {
 		void updateGenerated(final ServerUpdate serverUpdate);

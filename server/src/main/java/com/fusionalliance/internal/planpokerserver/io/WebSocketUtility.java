@@ -19,7 +19,7 @@ public final class WebSocketUtility {
 	 * Note: This is <i>not</i> a security feature and the phrase need not be protected.
 	 * 
 	 * @param phraseParm
-	 *            not empty
+	 *                   not empty
 	 * @return
 	 */
 	public static String generateSecWebSocketKey(final String phraseParm) {
@@ -38,7 +38,7 @@ public final class WebSocketUtility {
 	 * Note: This is <i>not</i> a security feature.
 	 * 
 	 * @param secWebSocketKeyParm
-	 *            not empty
+	 *                            not empty
 	 * @return
 	 */
 	public static String calculateSecWebSocketAccept(final String secWebSocketKeyParm) {
@@ -57,7 +57,7 @@ public final class WebSocketUtility {
 	 * feature.
 	 * 
 	 * @param inputParm
-	 *            required, not empty
+	 *                  required, not empty
 	 * @return
 	 */
 	private static final String hashToBase64(final String inputParm) {
