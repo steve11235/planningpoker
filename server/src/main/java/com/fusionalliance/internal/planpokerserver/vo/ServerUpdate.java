@@ -52,7 +52,7 @@ public class ServerUpdate {
 			return -1;
 		}
 
-		final BigDecimal average = new BigDecimal(sumVotes).divide(new BigDecimal(validVoters)).setScale(0, BigDecimal.ROUND_HALF_UP);
+		final BigDecimal average = new BigDecimal(sumVotes).divide(new BigDecimal(validVoters), 0, BigDecimal.ROUND_HALF_UP);
 
 		return average.intValue();
 	}

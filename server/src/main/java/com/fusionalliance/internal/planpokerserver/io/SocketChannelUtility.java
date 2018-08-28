@@ -72,10 +72,6 @@ public final class SocketChannelUtility {
 	public static void writeToSocket(final ByteBuffer byteBufferParm, final SocketChannel socketParm) throws InternalException {
 		check(byteBufferParm != null, "The ByteBuffer must not be null.");
 
-		if (byteBufferParm.position() > 0 && byteBufferParm.limit() == byteBufferParm.capacity()) {
-			byteBufferParm.flip();
-		}
-
 		// Non-blocking sockets are not guaranteed to write the full ByteBuffer
 		// Loop until the write completes
 		// This is an issue only with slow clients or bad connections

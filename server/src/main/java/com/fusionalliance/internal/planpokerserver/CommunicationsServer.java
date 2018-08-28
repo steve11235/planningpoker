@@ -170,7 +170,7 @@ public class CommunicationsServer {
 		}
 
 		if (request.getMethod() == HttpRequestMethods.POST) {
-			processPost(request.getPathSteps(), request.getBody(), socket);
+			processPost(request.getBody(), socket);
 
 			return;
 		}
@@ -300,11 +300,10 @@ public class CommunicationsServer {
 	/**
 	 * Handle POST. These contain requests from the clients.
 	 * 
-	 * @param pathStepsParm
 	 * @param bodyParm
 	 * @param socketParm
 	 */
-	private void processPost(List<String> pathStepsParm, String bodyParm, SocketChannel socketParm) {
+	private void processPost(String bodyParm, SocketChannel socketParm) {
 		if (StringUtils.isBlank(bodyParm)) {
 			HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content is missing.", socketParm);
 

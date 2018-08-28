@@ -86,6 +86,7 @@ public final class HttpUtility {
 			final byte[] headerBytes = assembleHead(responseStatusParm, headersParm);
 			final ByteBuffer buffer = ByteBuffer.wrap(headerBytes);
 			buffer.position(headerBytes.length);
+			buffer.flip();
 			SocketChannelUtility.writeToSocket(buffer, socketParm);
 
 			return;
@@ -100,6 +101,7 @@ public final class HttpUtility {
 			final ByteBuffer byteBuffer = ByteBuffer.allocate(headerBytes.length + bodyBytesParm.length);
 			byteBuffer.put(headerBytes);
 			byteBuffer.put(bodyBytesParm);
+			byteBuffer.flip();
 			SocketChannelUtility.writeToSocket(byteBuffer, socketParm);
 
 			return;
@@ -139,6 +141,7 @@ public final class HttpUtility {
 			// Avoid copying the array; requires setting the position
 			final ByteBuffer headBuffer = ByteBuffer.wrap(headBytes);
 			headBuffer.position(headBytes.length);
+			headBuffer.flip();
 
 			SocketChannelUtility.writeToSocket(headBuffer, socketParm);
 
@@ -159,6 +162,7 @@ public final class HttpUtility {
 				bodyBuffer.put(CRLF_BYTES);
 				bodyBuffer.put(bodyBytes, 0, bytesRead);
 				bodyBuffer.put(CRLF_BYTES);
+				bodyBuffer.flip();
 
 				SocketChannelUtility.writeToSocket(bodyBuffer, socketParm);
 			}
@@ -167,6 +171,7 @@ public final class HttpUtility {
 			bodyBuffer.put("0".getBytes(UTF_8));
 			bodyBuffer.put(CRLF_BYTES);
 			bodyBuffer.put(CRLF_BYTES);
+			bodyBuffer.flip();
 
 			SocketChannelUtility.writeToSocket(bodyBuffer, socketParm);
 		} catch (final Exception e) {
