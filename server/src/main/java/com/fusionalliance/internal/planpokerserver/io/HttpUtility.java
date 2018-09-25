@@ -12,11 +12,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.fusionalliance.internal.planpokerserver.utility.CommException;
 import com.fusionalliance.internal.planpokerserver.utility.InternalException;
+import com.fusionalliance.internal.planpokerserver.utility.LoggerUtility;
 import com.google.common.collect.ImmutableMap;
 
 public final class HttpUtility {
+	private static final Logger LOG = LoggerFactory.getLogger(HttpUtility.class);
+
 	public static final String CRLF = "\r\n";
 	private static final byte[] CRLF_BYTES = CRLF.getBytes(UTF_8);
 	private static final int CHUNK_LENGTH = 2048;
@@ -24,7 +30,8 @@ public final class HttpUtility {
 	 * This is a very limited map of file extensions to MIME types.
 	 * <p>
 	 * Our .ico file is actually a PNG. <br>
-	 * Only extensions used by <i>our</i> Angular app are used. Note that .map files are Angular files containing JSON.
+	 * Only extensions used by <i>our</i> Angular app are used. Note that .map files are Angular files containing JSON. <br>
+	 * Type "" maps to application/octet-stream.
 	 * <p>
 	 * All text-type files should use the UTF-8 charset.
 	 */
@@ -43,18 +50,15 @@ public final class HttpUtility {
 	/**
 	 * Write to a SocketChannel.
 	 * 
-	 * @param responseStatusParm
-	 *                           required
-	 * @param headersParm
-	 *                           required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
-	 * @param bodyParm
-	 *                           null or empty if no body
-	 * @param socketParm
-	 *                           required
+	 * @param responseStatusParm required
+	 * @param headersParm        required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
+	 * @param bodyParm           null or empty if no body
+	 * @param socketParm         required
 	 * @throws InternalException
+	 * @throws CommException
 	 */
 	public static void writeToSocket(final String responseStatusParm, final List<HttpHeader> headersParm, final String bodyParm,
-			final SocketChannel socketParm) throws InternalException {
+			final SocketChannel socketParm) throws InternalException, CommException {
 		final byte[] bodyBytes;
 
 		if (StringUtils.isEmpty(bodyParm)) {
@@ -69,18 +73,14 @@ public final class HttpUtility {
 	/**
 	 * Write to a SocketChannel.
 	 * 
-	 * @param responseStatusParm
-	 *                           required
-	 * @param headersParm
-	 *                           required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
-	 * @param bodyBytesParm
-	 *                           required, may be empty
-	 * @param socketParm
-	 *                           required
-	 * @throws InternalException
+	 * @param responseStatusParm required
+	 * @param headersParm        required; do <i>not</i> include Content-Length or Transfer-Encoding: chunked
+	 * @param bodyBytesParm      required, may be empty
+	 * @param socketParm         required
+	 * @throws CommException
 	 */
 	public static void writeToSocket(final String responseStatusParm, final List<HttpHeader> headersParm, final byte[] bodyBytesParm,
-			final SocketChannel socketParm) throws InternalException {
+			final SocketChannel socketParm) throws CommException {
 		// If no body, just send headers with no Content-Length
 		if (bodyBytesParm.length == 0) {
 			final byte[] headerBytes = assembleHead(responseStatusParm, headersParm);
@@ -111,18 +111,14 @@ public final class HttpUtility {
 	/**
 	 * Write to a SocketChannel.
 	 * 
-	 * @param responseStatusParm
-	 *                           required
-	 * @param headersParm
-	 *                           required, may be empty
-	 * @param bodyStreamParm
-	 *                           required; always closed before method return
-	 * @param socketParm
-	 *                           required
-	 * @throws InternalException
+	 * @param responseStatusParm required
+	 * @param headersParm        required, may be empty
+	 * @param bodyStreamParm     required; always closed before method return
+	 * @param socketParm         required
+	 * @throws CommException
 	 */
 	public static void writeToSocket(final String responseStatusParm, final List<HttpHeader> headersParm, final InputStream bodyStreamParm,
-			final SocketChannel socketParm) throws InternalException {
+			final SocketChannel socketParm) throws CommException {
 		check(bodyStreamParm != null, "Body input stream may not be null.");
 
 		final BufferedInputStream bufferedBodyStream;
@@ -175,7 +171,8 @@ public final class HttpUtility {
 
 			SocketChannelUtility.writeToSocket(bodyBuffer, socketParm);
 		} catch (final Exception e) {
-			throw new InternalException("Failure during chunked write.", e);
+			LoggerUtility.logIssueWithStackTrace(LOG, "Failure during chunked write.", false, e);
+			throw new CommException();
 		} finally {
 			try {
 				bufferedBodyStream.close();

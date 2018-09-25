@@ -12,9 +12,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fusionalliance.internal.planpokerserver.utility.CheckCondition;
 import com.fusionalliance.internal.planpokerserver.utility.InternalException;
+import com.fusionalliance.internal.planpokerserver.utility.LoggerUtility;
 
 /**
  * This class implements an HTTP request. The constructor takes raw request bytes and parses them.
@@ -28,6 +31,8 @@ import com.fusionalliance.internal.planpokerserver.utility.InternalException;
  * </ul>
  */
 public class HttpRequest {
+	private static final Logger LOG = LoggerFactory.getLogger(HttpRequest.class);
+
 	private final HttpRequestMethods method;
 	private final String path;
 	private final List<String> pathSteps;
@@ -38,8 +43,7 @@ public class HttpRequest {
 	/**
 	 * Constructor
 	 * 
-	 * @param bufferParm
-	 *                   a ByteBuffer containing the request bytes; it <b>must</b> be flipped
+	 * @param bufferParm a ByteBuffer containing the request bytes; it <b>must</b> be flipped
 	 */
 	public HttpRequest(final ByteBuffer bufferParm) {
 		check(bufferParm != null && bufferParm.limit() > 0, "The buffer passed is null or empty.");
@@ -61,7 +65,9 @@ public class HttpRequest {
 		try {
 			method = HttpRequestMethods.valueOf(startLinePieces[0]);
 		} catch (final Exception e) {
-			throw new InternalException("Unknown request method: " + startLinePieces[0]);
+			LoggerUtility.logIssueWithStackTrace(LOG, "Unknown request method: " + startLinePieces[0], false, e);
+
+			throw new InternalException();
 		}
 
 		// Path must have each step URL decoded, then reassembled
@@ -93,8 +99,7 @@ public class HttpRequest {
 	/**
 	 * Return a list decoded of path steps.
 	 * 
-	 * @param pathParm
-	 *                 required
+	 * @param pathParm required
 	 * @return
 	 */
 	private List<String> parsePath(String pathParm) {
@@ -108,7 +113,9 @@ public class HttpRequest {
 			try {
 				pathSteps.add(URLDecoder.decode(pathSplits[i], StandardCharsets.UTF_8.name()));
 			} catch (final Exception e) {
-				throw new InternalException("Error decoding path step: " + pathSplits[i], e);
+				LoggerUtility.logIssueWithStackTrace(LOG, "Error decoding path step: " + pathSplits[i], false, e);
+
+				throw new InternalException();
 			}
 		}
 

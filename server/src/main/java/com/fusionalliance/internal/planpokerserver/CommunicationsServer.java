@@ -19,9 +19,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fusionalliance.internal.planpokerserver.io.HttpHeader;
 import com.fusionalliance.internal.planpokerserver.io.HttpRequest;
@@ -32,7 +35,9 @@ import com.fusionalliance.internal.planpokerserver.io.WebSocketFrame;
 import com.fusionalliance.internal.planpokerserver.io.WebSocketOpCode;
 import com.fusionalliance.internal.planpokerserver.io.WebSocketUtility;
 import com.fusionalliance.internal.planpokerserver.utility.CheckCondition;
+import com.fusionalliance.internal.planpokerserver.utility.CommException;
 import com.fusionalliance.internal.planpokerserver.utility.InternalException;
+import com.fusionalliance.internal.planpokerserver.utility.LoggerUtility;
 import com.fusionalliance.internal.planpokerserver.vo.ClientRequest;
 import com.fusionalliance.internal.planpokerserver.vo.ServerResponse;
 import com.fusionalliance.internal.planpokerserver.vo.ServerUpdate;
@@ -40,6 +45,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.gson.Gson;
 
 public class CommunicationsServer {
+	private static final Logger LOG = LoggerFactory.getLogger(CommunicationsServer.class);
+
 	private static final String KEEP_ALIVE = "Keep alive";
 	private static final List<HttpHeader> ERROR_HEADERS = ImmutableList.of( //
 			new HttpHeader("Content-Type", "text/plain; charset=utf-8") //
@@ -64,7 +71,9 @@ public class CommunicationsServer {
 		try {
 			selector = Selector.open();
 		} catch (final Exception e) {
-			throw new InternalException("Failed to open selector.", e);
+			LoggerUtility.logIssueWithStackTrace(LOG, "Failed to open selector.", false, e);
+
+			throw new InternalException();
 		}
 
 		try {
@@ -73,7 +82,9 @@ public class CommunicationsServer {
 			serverSocket.bind(new InetSocketAddress(40080));
 			serverSocket.register(selector, SelectionKey.OP_ACCEPT);
 		} catch (final Exception e) {
-			throw new InternalException("Failed to create server socket.", e);
+			LoggerUtility.logIssueWithStackTrace(LOG, "Failed to create server socket.", false, e);
+
+			throw new InternalException();
 		}
 	}
 
@@ -101,7 +112,7 @@ public class CommunicationsServer {
 					} else if (key.isReadable()) {
 						handleRead(key);
 					} else {
-						System.err.println("Unexpected key operation: " + key.readyOps());
+						LOG.warn("Unexpected key operation: " + key.readyOps());
 					}
 
 					key = null;
@@ -110,18 +121,15 @@ public class CommunicationsServer {
 				selectedKeyIterator = null;
 			}
 		} catch (final Exception e) {
-			e.printStackTrace();
+			LoggerUtility.logIssueWithStackTrace(LOG, "Fatal error in selector loop!", false, e);
 		} finally {
 			// Add close sockets logic here
 		}
-
 	}
 
 	private void handleAccept(ServerSocketChannel serverSocketParm) {
-		final SocketChannel socket;
-
 		try {
-			socket = serverSocketParm.accept();
+			final SocketChannel socket = serverSocketParm.accept();
 
 			if (socket == null) {
 				System.out.println("Null on accept.");
@@ -133,49 +141,53 @@ public class CommunicationsServer {
 			socket.setOption(StandardSocketOptions.TCP_NODELAY, Boolean.TRUE);
 			socket.register(selector, SelectionKey.OP_READ);
 		} catch (final Exception e) {
-			throw new InternalException("Error accepting socket.", e);
+			LoggerUtility.logIssueWithStackTrace(LOG, "Error accepting socket.", false, e);
 		}
 	}
 
-	private void handleRead(final SelectionKey keyParm) {
-		final SocketChannel socket = (SocketChannel) keyParm.channel();
+	private void handleRead(final SelectionKey keyParm) throws CommException {
+		try {
+			final SocketChannel socket = (SocketChannel) keyParm.channel();
 
-		if (!socket.isConnected()) {
-			return;
-		}
+			if (!socket.isConnected()) {
+				return;
+			}
 
-		final ByteBuffer buffer = SocketChannelUtility.readUnblocked(socket);
+			final ByteBuffer buffer = SocketChannelUtility.readUnblocked(socket);
 
-		// Socket closed during read
-		if (buffer == null) {
-			return;
-		}
+			// Socket closed during read
+			if (buffer == null) {
+				return;
+			}
 
-		buffer.flip();
-		final HttpRequest request = new HttpRequest(buffer);
-		buffer.clear();
+			buffer.flip();
+			final HttpRequest request = new HttpRequest(buffer);
+			buffer.clear();
 
-		if (request.getMethod() == HttpRequestMethods.GET) {
-			// Standard GET request
-			if (!request.getHeaders().containsKey("Upgrade")) {
-				processGet(request.getPath(), socket);
+			if (request.getMethod() == HttpRequestMethods.GET) {
+				// Standard GET request
+				if (!request.getHeaders().containsKey("Upgrade")) {
+					processGet(request.getPath(), socket);
+
+					return;
+				}
+
+				// Handle upgrade to WebSocket request
+				processWebSocket(request, socket);
 
 				return;
 			}
 
-			// Handle upgrade to WebSocket request
-			processWebSocket(request, socket);
+			if (request.getMethod() == HttpRequestMethods.POST) {
+				processPost(request.getBody(), socket);
 
-			return;
+				return;
+			}
+
+			LOG.warn("Unknown request method: " + request.getMethod().name());
+		} catch (final Exception e) {
+			LoggerUtility.logIssueWithStackTrace(LOG, "Error while reading socket.", false, e);
 		}
-
-		if (request.getMethod() == HttpRequestMethods.POST) {
-			processPost(request.getBody(), socket);
-
-			return;
-		}
-
-		throw new InternalException("Unknown request type: " + request.getMethod().name());
 	}
 
 	private void processGet(final String pathParm, final SocketChannel socketParm) {
@@ -183,7 +195,12 @@ public class CommunicationsServer {
 
 		// Resource not found
 		if (pathUrl == null) {
-			HttpUtility.writeToSocket("HTTP/1.1 404 Not Found", ERROR_HEADERS, "404 Not Found: " + pathParm, socketParm);
+			LOG.warn("Unknown resource requested: " + pathParm);
+			try {
+				HttpUtility.writeToSocket("HTTP/1.1 404 Not Found", ERROR_HEADERS, "404 Not Found: " + pathParm, socketParm);
+			} catch (final Exception e) {
+				LoggerUtility.logIssueWithStackTrace(LOG, "Failed to send 404 response to client.", false, e);
+			}
 
 			return;
 		}
@@ -192,7 +209,15 @@ public class CommunicationsServer {
 		try {
 			inputStream = pathUrl.openStream();
 		} catch (final Exception e) {
-			throw new InternalException("Unable to open input stream for resource: " + pathParm, e);
+			LoggerUtility.logIssueWithStackTrace(LOG, "Unable to open input stream for resource: " + pathParm, true, e);
+
+			try {
+				HttpUtility.writeToSocket("HTTP/1.1 500 Internal Error", ERROR_HEADERS, "500 Internal error processing: " + pathParm, socketParm);
+			} catch (final Exception e1) {
+				LoggerUtility.logIssueWithStackTrace(LOG, "Failed to send 500 response to client.", false, e1);
+			}
+
+			return;
 		}
 
 		final int separator = pathParm.lastIndexOf('.');
@@ -210,10 +235,10 @@ public class CommunicationsServer {
 		}
 
 		try {
-			final List<HttpHeader> headers = ImmutableList.of( //
-					new HttpHeader("Content-Type", contentType) //
-			);
+			final List<HttpHeader> headers = ImmutableList.of(new HttpHeader("Content-Type", contentType));
 			HttpUtility.writeToSocket("HTTP/1.1 200 OK", headers, inputStream, socketParm);
+		} catch (final Exception e) {
+			LoggerUtility.logIssueWithStackTrace(LOG, "Failed to send resource: " + pathParm, true, e);
 		} finally {
 			try {
 				inputStream.close();
@@ -223,7 +248,7 @@ public class CommunicationsServer {
 		}
 	}
 
-	private void processWebSocket(final HttpRequest requestParm, final SocketChannel socket) {
+	private void processWebSocket(final HttpRequest requestParm, final SocketChannel socket) throws CommException {
 		// Stop handling read requests on the read selector
 		// WebSocket requests must be handled separately
 		socket.keyFor(selector).cancel();
@@ -242,7 +267,9 @@ public class CommunicationsServer {
 			// We only read for ping/pong responses; expect them to come back quickly
 			socket.socket().setSoTimeout(500);
 		} catch (final Exception e) {
-			throw new InternalException("Unable to configure WebSocket for blocking.", e);
+			LoggerUtility.logIssueWithStackTrace(LOG, "Unable to configure WebSocket for blocking.", false, e);
+
+			throw new CommException();
 		}
 
 		final String secWebSocketKey = requestParm.getHeaders().get(WebSocketUtility.SEC_WEBSOCKET_KEY);
@@ -258,20 +285,22 @@ public class CommunicationsServer {
 
 		// Perform ping test
 		if (!performWebSocketPing(socket)) {
-			throw new InternalException("WebSocket failed initial ping test.");
+			LoggerUtility.logIssueWithStackTrace(LOG, "WebSocket failed initial ping test.", false, null);
+
+			throw new CommException();
 		}
 
 		webSocketByVoterName.put(voterName, socket);
 
-		voterConnectedListener.voterConnected(voterName);
+		voterConnectedListener.handleVoterConnected(voterName);
 	}
 
 	/**
 	 * Perform a WebSocket ping/pong. Return true if successful.
 	 * 
-	 * @param socketParm
-	 *                   required
+	 * @param socketParm required
 	 * @return
+	 * @throws CommException
 	 */
 	private boolean performWebSocketPing(final SocketChannel socketParm) {
 		check(socketParm != null, "The socket may not be null.");
@@ -279,14 +308,22 @@ public class CommunicationsServer {
 		final String pingMessage = KEEP_ALIVE;
 		final WebSocketFrame writeFrame = new WebSocketFrame(true, WebSocketOpCode.PING, false, pingMessage.getBytes(StandardCharsets.UTF_8));
 
-		SocketChannelUtility.writeToSocket(writeFrame.getReadOnlyBuffer(), socketParm);
+		try {
+			SocketChannelUtility.writeToSocket(writeFrame.getReadOnlyBuffer(), socketParm);
+		} catch (final Exception e) {
+			e.printStackTrace();
+
+			return false;
+		}
 
 		// Receive Pong
 		final ByteBuffer readBuffer = ByteBuffer.allocate(100);
 		try {
 			socketParm.read(readBuffer);
 		} catch (final Exception e) {
-			throw new InternalException("Unable to read from WebSocket.", e);
+			e.printStackTrace();
+
+			return false;
 		}
 
 		readBuffer.flip();
@@ -299,13 +336,20 @@ public class CommunicationsServer {
 
 	/**
 	 * Handle POST. These contain requests from the clients.
+	 * <p>
+	 * If a comm error occurs and the voter name is available, then remove the voter. However, this is only possible if the request is valid and the
+	 * error occurs when sending a response.
 	 * 
 	 * @param bodyParm
 	 * @param socketParm
 	 */
 	private void processPost(String bodyParm, SocketChannel socketParm) {
 		if (StringUtils.isBlank(bodyParm)) {
-			HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content is missing.", socketParm);
+			try {
+				HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content is missing.", socketParm);
+			} catch (final Exception e) {
+				e.printStackTrace();
+			}
 
 			return;
 		}
@@ -315,27 +359,45 @@ public class CommunicationsServer {
 		try {
 			clientRequest = GSON.fromJson(bodyParm, ClientRequest.class);
 		} catch (final Exception e) {
-			HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content not recognized: " + bodyParm,
-					socketParm);
+			e.printStackTrace();
+
+			try {
+				HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content not recognized: " + bodyParm,
+						socketParm);
+			} catch (final Exception e1) {
+				e1.printStackTrace();
+			}
 
 			return;
 		}
 
 		final String errorMessage = clientRequest.validate();
 		if (errorMessage != null) {
-			HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: " + errorMessage, socketParm);
+			try {
+				HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: " + errorMessage, socketParm);
+			} catch (final Exception e) {
+				e.printStackTrace();
+
+				removeConnectedVoter(clientRequest.getVoterName());
+			}
 
 			return;
 		}
 
-		final ServerResponse clientResponse = clientRequestListener.requestReceived(clientRequest);
+		final ServerResponse clientResponse = clientRequestListener.handleRequestReceived(clientRequest);
 
 		final String clientResponseJson = GSON.toJson(clientResponse);
 
 		final List<HttpHeader> headers = ImmutableList.of( //
 				new HttpHeader("Content-Type", HttpUtility.CONTENT_TYPE_MAP.get("json")) //
 		);
-		HttpUtility.writeToSocket("HTTP/1.1 200 OK", headers, clientResponseJson, socketParm);
+		try {
+			HttpUtility.writeToSocket("HTTP/1.1 200 OK", headers, clientResponseJson, socketParm);
+		} catch (final Exception e) {
+			e.printStackTrace();
+
+			removeConnectedVoter(clientRequest.getVoterName());
+		}
 
 		return;
 	}
@@ -352,8 +414,7 @@ public class CommunicationsServer {
 	/**
 	 * Broadcast the server update to all connected voters.
 	 * 
-	 * @param serverUpdateParm
-	 *                         required
+	 * @param serverUpdateParm required
 	 */
 	public void broadcastServerUpdate(final ServerUpdate serverUpdateParm) {
 		check(serverUpdateParm != null, "The server update may not be null.");
@@ -362,8 +423,20 @@ public class CommunicationsServer {
 		final WebSocketFrame webSocketFrame = new WebSocketFrame(true, WebSocketOpCode.TEXT, false,
 				serverUpdateJson.getBytes(StandardCharsets.UTF_8));
 
-		for (SocketChannel socket : webSocketByVoterName.values()) {
-			SocketChannelUtility.writeToSocket(webSocketFrame.getReadOnlyBuffer(), socket);
+		// Keep track of voters whose Web sockets failed for later removal
+		final Set<String> failedVoterNames = new HashSet<>();
+
+		for (Entry<String, SocketChannel> webSocketByVoterNameEntry : webSocketByVoterName.entrySet()) {
+			try {
+				SocketChannelUtility.writeToSocket(webSocketFrame.getReadOnlyBuffer(), webSocketByVoterNameEntry.getValue());
+			} catch (final CommException ce) {
+				ce.printStackTrace();
+				failedVoterNames.add(webSocketByVoterNameEntry.getKey());
+			}
+		}
+
+		for (String failedVoterName : failedVoterNames) {
+			removeConnectedVoter(failedVoterName);
 		}
 	}
 
@@ -376,7 +449,11 @@ public class CommunicationsServer {
 		final SocketChannel socket = webSocketByVoterName.remove(voterNameParm);
 
 		final WebSocketFrame closeRequestFrame = new WebSocketFrame(true, WebSocketOpCode.CLOSE, false, new byte[0]);
-		SocketChannelUtility.writeToSocket(closeRequestFrame.getReadOnlyBuffer(), socket);
+		try {
+			SocketChannelUtility.writeToSocket(closeRequestFrame.getReadOnlyBuffer(), socket);
+		} catch (final CommException ce) {
+			ce.printStackTrace();
+		}
 		try {
 			socket.close();
 		} catch (final Exception e) {
@@ -386,17 +463,26 @@ public class CommunicationsServer {
 
 	/**
 	 * This interface defines the contract for classes that listen for client request events.
-	 * <p>
-	 * Implementers must return a non-null ClientResponse.
 	 */
 	public interface ClientRequestListener extends EventListener {
-		ServerResponse requestReceived(final ClientRequest clientRequest);
+		/**
+		 * Process a client request, returning a server response.
+		 * 
+		 * @param clientRequest required
+		 * @return not null
+		 */
+		ServerResponse handleRequestReceived(final ClientRequest clientRequest);
 	}
 
 	/**
 	 * This interface defines the contract for classes that listen for voter connected events.
 	 */
 	public interface VoterConnectedListener extends EventListener {
-		void voterConnected(final String voterName);
+		/**
+		 * Process a voter connected event.
+		 * 
+		 * @param voterName required
+		 */
+		void handleVoterConnected(final String voterName);
 	}
 }

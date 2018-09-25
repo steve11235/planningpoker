@@ -59,7 +59,7 @@ public class Model {
 		clearVotes();
 
 		final ServerUpdate serverUpdate = generateServerUpdate("Vote canceled by: " + voterNameParm);
-		serverUpdateListener.updateGenerated(serverUpdate);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
 
 		return new ServerResponse();
 	}
@@ -72,7 +72,7 @@ public class Model {
 		voteStatus = 2;
 
 		final ServerUpdate serverUpdate = generateServerUpdate("Vote ended by: " + voterNameParm);
-		serverUpdateListener.updateGenerated(serverUpdate);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
 
 		return new ServerResponse();
 	}
@@ -80,8 +80,7 @@ public class Model {
 	/**
 	 * Add the voter, step 1 of 2. See {@link #doConnected(String)}.
 	 * <p>
-	 * This is a standard request for the voter to join. If this request is
-	 * successful, then the client must create a WebSocket connection.
+	 * This is a standard request for the voter to join. If this request is successful, then the client must create a WebSocket connection.
 	 * 
 	 * @param voterNameParm required, must be unique
 	 * @return null if joined; otherwise, an error message
@@ -93,7 +92,7 @@ public class Model {
 
 		voterByName.put(voterNameParm, new Voter(voterNameParm));
 
-		voterJoinedListener.voterJoined(voterNameParm);
+		voterJoinedListener.handleVoterJoined(voterNameParm);
 
 		return new ServerResponse();
 	}
@@ -101,8 +100,7 @@ public class Model {
 	/**
 	 * Add the voter, step 2 of 2. See {@link #doJoin(String)}.
 	 * <p>
-	 * After the join request, the client creates a WebSocket connection; this
-	 * method is invoked after that connection is complete.
+	 * After the join request, the client creates a WebSocket connection; this method is invoked after that connection is complete.
 	 * 
 	 * @param voterNameParm required, must exist
 	 * @return null if success; otherwise, an error message
@@ -113,7 +111,7 @@ public class Model {
 		}
 
 		final ServerUpdate serverUpdate = generateServerUpdate("A new voter joined: " + voterNameParm);
-		serverUpdateListener.updateGenerated(serverUpdate);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
 
 		return new ServerResponse();
 	}
@@ -125,10 +123,10 @@ public class Model {
 
 		voterByName.remove(voterNameParm);
 
-		voterLeftListener.voterLeft(voterNameParm);
+		voterLeftListener.handleVoterLeft(voterNameParm);
 
 		final ServerUpdate serverUpdate = generateServerUpdate("A voter left: " + voterNameParm);
-		serverUpdateListener.updateGenerated(serverUpdate);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
 
 		return new ServerResponse();
 	}
@@ -142,7 +140,7 @@ public class Model {
 		clearVotes();
 
 		final ServerUpdate serverUpdate = generateServerUpdate("Refresh requested by: " + voterNameParm);
-		serverUpdateListener.updateGenerated(serverUpdate);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
 
 		return new ServerResponse();
 	}
@@ -156,7 +154,7 @@ public class Model {
 		clearVotes();
 
 		final ServerUpdate serverUpdate = generateServerUpdate("Vote started by: " + voterNameParm);
-		serverUpdateListener.updateGenerated(serverUpdate);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
 
 		return new ServerResponse();
 	}
@@ -174,7 +172,7 @@ public class Model {
 		voter.setVote(voteParm);
 
 		final ServerUpdate serverUpdate = generateServerUpdate("Vote by: " + voterNameParm);
-		serverUpdateListener.updateGenerated(serverUpdate);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
 
 		boolean voteComplete = true;
 		for (Voter loopVoter : voterByName.values()) {
@@ -234,26 +232,38 @@ public class Model {
 	}
 
 	/**
-	 * This interface defines the contract for classes that listen for voter joined
-	 * events.
-	 */
-	public interface VoterJoinedListener extends EventListener {
-		void voterJoined(final String voterName);
-	}
-
-	/**
-	 * This interface defines the contract for classes that listen for voter left
-	 * events.
-	 */
-	public interface VoterLeftListener extends EventListener {
-		void voterLeft(final String voterName);
-	}
-
-	/**
-	 * This interface defines the contract for classes that listen for server
-	 * updates events.
+	 * This interface defines the contract for classes that listen for server updates events.
 	 */
 	public interface ServerUpdateListener extends EventListener {
-		void updateGenerated(final ServerUpdate serverUpdate);
+		/**
+		 * Process a server update event.
+		 * 
+		 * @param serverUpdate required
+		 */
+		void handleUpdateGenerated(final ServerUpdate serverUpdate);
+	}
+
+	/**
+	 * This interface defines the contract for classes that listen for voter joined events.
+	 */
+	public interface VoterJoinedListener extends EventListener {
+		/**
+		 * Process a voter joined event.
+		 * 
+		 * @param voterName
+		 */
+		void handleVoterJoined(final String voterName);
+	}
+
+	/**
+	 * This interface defines the contract for classes that listen for voter left events.
+	 */
+	public interface VoterLeftListener extends EventListener {
+		/**
+		 * Process a voter left event.
+		 * 
+		 * @param voterName
+		 */
+		void handleVoterLeft(final String voterName);
 	}
 }

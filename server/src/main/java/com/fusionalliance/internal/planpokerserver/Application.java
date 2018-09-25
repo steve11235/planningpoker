@@ -1,14 +1,20 @@
 package com.fusionalliance.internal.planpokerserver;
 
-import com.fusionalliance.internal.planpokerserver.CommunicationsServer.VoterConnectedListener;
-import com.fusionalliance.internal.planpokerserver.Model.ServerUpdateListener;
-import com.fusionalliance.internal.planpokerserver.Model.VoterJoinedListener;
-import com.fusionalliance.internal.planpokerserver.Model.VoterLeftListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fusionalliance.internal.planpokerserver.vo.ClientRequest;
 import com.fusionalliance.internal.planpokerserver.vo.ServerResponse;
 import com.fusionalliance.internal.planpokerserver.vo.ServerUpdate;
 
-public class Application {
+public class Application implements //
+		Model.ServerUpdateListener, //
+		Model.VoterJoinedListener, //
+		Model.VoterLeftListener, //
+		CommunicationsServer.ClientRequestListener, //
+		CommunicationsServer.VoterConnectedListener //
+{
+	private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
 	public static void main(String[] args) {
 		new Application().run();
@@ -19,57 +25,45 @@ public class Application {
 
 	public Application() {
 		model = new Model(this::handleVoterJoined, this::handleVoterLeft, this::handleUpdateGenerated);
-		communicationsServer = new CommunicationsServer(this::handleRequest, this::handleVoterConnected);
+		communicationsServer = new CommunicationsServer(this::handleRequestReceived, this::handleVoterConnected);
 	}
 
 	public void run() {
+		LOG.info("The server is starting.");
+
 		try {
 			communicationsServer.run();
 		} catch (final Exception e) {
-			e.printStackTrace();
+			LOG.error("The aapplication failed!", e);
+		}
+
+		// Keep the console open until it is externally closed
+		while (true) {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				// Do nothing
+			}
 		}
 	}
 
-	/**
-	 * Handle a voter joined event. See {@link VoterJoinedListener#voterJoined(String)}.
-	 * 
-	 * @param voterNameParm
-	 *                      required
-	 */
-	private void handleVoterJoined(final String voterNameParm) {
+	@Override
+	public void handleVoterJoined(final String voterNameParm) {
 		communicationsServer.addConnectPendingVoter(voterNameParm);
 	}
 
-	/**
-	 * Handle a voter connected event. See {@link VoterConnectedListener#voterConnected(String)}.
-	 * 
-	 * @param voterNameParm
-	 *                      required
-	 */
-	private void handleVoterConnected(final String voterNameParm) {
-		model.doConnected(voterNameParm);
-	}
-
-	/**
-	 * Handle a voter left event. See {@link VoterLeftListener#voterLeft(String)}.
-	 * 
-	 * @param voterNameParm
-	 *                      required
-	 */
-	private void handleVoterLeft(final String voterNameParm) {
+	@Override
+	public void handleVoterLeft(final String voterNameParm) {
 		communicationsServer.removeConnectedVoter(voterNameParm);
 	}
 
-	/**
-	 * Handle a server update generated event. See {@link ServerUpdateListener#updateGenerated(ServerUpdate)}.
-	 * 
-	 * @param serverUpdateParm
-	 */
-	private void handleUpdateGenerated(final ServerUpdate serverUpdateParm) {
+	@Override
+	public void handleUpdateGenerated(final ServerUpdate serverUpdateParm) {
 		communicationsServer.broadcastServerUpdate(serverUpdateParm);
 	}
 
-	private ServerResponse handleRequest(final ClientRequest clientRequestParm) {
+	@Override
+	public ServerResponse handleRequestReceived(final ClientRequest clientRequestParm) {
 		final ServerResponse serverResponse;
 
 		switch (clientRequestParm.getRequestType()) {
@@ -107,5 +101,10 @@ public class Application {
 		}
 
 		return serverResponse;
+	}
+
+	@Override
+	public void handleVoterConnected(final String voterNameParm) {
+		model.doConnected(voterNameParm);
 	}
 }
