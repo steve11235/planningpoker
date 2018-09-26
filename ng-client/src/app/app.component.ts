@@ -1,35 +1,35 @@
-import { Component } from "@angular/core";
-import { ServerCommunications } from "./service/ServerCommunications";
-import { ServerUpdate } from "./shared/ServerUpdate";
-import { Voter } from "./shared/Voter";
-import { ClientRequest } from "./shared/ClientRequest";
+import { Component } from '@angular/core';
+import { ServerCommunications } from './service/ServerCommunications';
+import { ServerUpdate } from './shared/ServerUpdate';
+import { Voter } from './shared/Voter';
+import { ClientRequest } from './shared/ClientRequest';
 
 @Component({
-  selector: "app-root",
-  templateUrl: "./app.component.html",
-  styleUrls: ["./app.component.css"]
+  selector: 'app-root',
+  templateUrl: './app.component.html',
+  styleUrls: ['./app.component.css']
 })
 export class AppComponent {
   voteLabels: string[] = [
-    "?",
-    ".5",
-    "1",
-    "2",
-    "3",
-    "5",
-    "8",
-    "13",
-    "20",
-    "40",
-    "100"
+    '?',
+    '.5',
+    '1',
+    '2',
+    '3',
+    '5',
+    '8',
+    '13',
+    '20',
+    '40',
+    '100'
   ];
-  isJoined: boolean = false;
+  isJoined = false;
   voterName: string = null;
   serverUpdate: ServerUpdate;
 
   constructor(private serverCommunications: ServerCommunications) {
     this.serverUpdate = serverCommunications.retrieveEmptyServerUpdate(
-      "Waiting to join."
+      'Waiting to join.'
     );
   }
 
@@ -38,7 +38,7 @@ export class AppComponent {
       return false;
     }
 
-    return this.serverUpdate.voteStatus != 1;
+    return this.serverUpdate.voteStatus !== 1;
   }
 
   isVoteInProgress(): boolean {
@@ -46,7 +46,7 @@ export class AppComponent {
       return false;
     }
 
-    return this.serverUpdate.voteStatus == 1;
+    return this.serverUpdate.voteStatus === 1;
   }
 
   onJoinLeave() {
@@ -56,12 +56,12 @@ export class AppComponent {
         return;
       }
 
-      const clientRequest: ClientRequest = new ClientRequest(
+      const joinClientRequest: ClientRequest = new ClientRequest(
         ClientRequest.JOIN,
         this.voterName
       );
       this.serverCommunications.sendRequest(
-        clientRequest,
+        joinClientRequest,
         (joinedSuccess: boolean) => {
           this.doAfterJoin(joinedSuccess);
         }
@@ -70,12 +70,12 @@ export class AppComponent {
       return;
     }
 
-    const clientRequest: ClientRequest = new ClientRequest(
+    const leaveClientRequest: ClientRequest = new ClientRequest(
       ClientRequest.LEAVE,
       this.voterName
     );
     this.serverCommunications.sendRequest(
-      clientRequest,
+      leaveClientRequest,
       (leftSuccess: boolean) => {
         this.doAfterLeave(leftSuccess);
       }
@@ -98,7 +98,7 @@ export class AppComponent {
   private doAfterLeave(leftSuccess: boolean): void {
     if (!leftSuccess) {
       alert(
-        "Failed to leave the vote. Please use the browser Refresh button to reload the application."
+        'Failed to leave the vote. Please use the browser Refresh button to reload the application.'
       );
 
       return;
@@ -152,10 +152,20 @@ export class AppComponent {
     this.serverCommunications.sendRequest(clientRequest);
   }
 
+  onDropVoter(voterNameToDrop: string) {
+    const clientRequest: ClientRequest = new ClientRequest(
+      ClientRequest.DROP_VOTER,
+      this.voterName,
+      -1,
+      voterNameToDrop
+    );
+    this.serverCommunications.sendRequest(clientRequest);
+  }
+
   // Helper method called by view
   isYetToVote(voter: Voter): boolean {
     // Applies only to vote in progress, complete
-    if (this.serverUpdate.voteStatus == 0) {
+    if (this.serverUpdate.voteStatus === 0) {
       return false;
     }
 
@@ -164,35 +174,35 @@ export class AppComponent {
 
   // Helper method called by view
   calculateOffByClass(vote: number, index: number): string {
-    if (this.serverUpdate.voteStatus != 2) {
-      return "";
+    if (this.serverUpdate.voteStatus !== 2) {
+      return '';
     }
 
     // Handle situation where vote was forced closed with this voter not voting
-    if (vote == -1) {
-      return "";
+    if (vote === -1) {
+      return '';
     }
 
     // Don't update voter/button cells unless the voter/button voted for that cell
-    if (vote != index) {
-      return "";
+    if (vote !== index) {
+      return '';
     }
 
     // Handle situation where there is no average
-    if (this.serverUpdate.averageVote == -1) {
-      return "offBy3";
+    if (this.serverUpdate.averageVote === -1) {
+      return 'offBy3';
     }
 
-    if (vote == 0) {
-      return "offBy3";
+    if (vote === 0) {
+      return 'offBy3';
     }
 
     const offBy: number = Math.abs(vote - this.serverUpdate.averageVote);
 
     if (offBy > 3) {
-      return "offBy3";
+      return 'offBy3';
     }
 
-    return "offBy" + offBy;
+    return 'offBy' + offBy;
   }
 }

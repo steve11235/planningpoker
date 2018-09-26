@@ -21,8 +21,6 @@ public class Model {
 
 	private final Map<String, Voter> voterByName = new HashMap<>();
 
-	final VoterJoinedListener voterJoinedListener;
-	final VoterLeftListener voterLeftListener;
 	final ServerUpdateListener serverUpdateListener;
 
 	/** 0 = no vote 1 = vote in progress 2 = vote complete */
@@ -31,16 +29,9 @@ public class Model {
 	/**
 	 * Constructor
 	 * 
-	 * @param voterJoinedListenerParm  required
-	 * @param voterLeftListenerParm    required
 	 * @param serverUpdateListenerParm required
 	 */
-	public Model(
-			final VoterJoinedListener voterJoinedListenerParm,
-			final VoterLeftListener voterLeftListenerParm,
-			final ServerUpdateListener serverUpdateListenerParm) {
-		voterJoinedListener = voterJoinedListenerParm;
-		voterLeftListener = voterLeftListenerParm;
+	public Model(final ServerUpdateListener serverUpdateListenerParm) {
 		serverUpdateListener = serverUpdateListenerParm;
 	}
 
@@ -92,8 +83,6 @@ public class Model {
 
 		voterByName.put(voterNameParm, new Voter(voterNameParm));
 
-		voterJoinedListener.handleVoterJoined(voterNameParm);
-
 		return new ServerResponse();
 	}
 
@@ -122,8 +111,6 @@ public class Model {
 		}
 
 		voterByName.remove(voterNameParm);
-
-		voterLeftListener.handleVoterLeft(voterNameParm);
 
 		final ServerUpdate serverUpdate = generateServerUpdate("A voter left: " + voterNameParm);
 		serverUpdateListener.handleUpdateGenerated(serverUpdate);
@@ -190,6 +177,33 @@ public class Model {
 		return new ServerResponse();
 	}
 
+	public ServerResponse doDropVoter(String voterNameParm, String voterNameToDropParm) {
+		if (!checkVoterJoined(voterNameParm)) {
+			return new ServerResponse(UNKNOWN_VOTER + voterNameParm);
+		}
+
+		if (voterByName.remove(voterNameToDropParm) != null) {
+			final ServerUpdate serverUpdate = generateServerUpdate("A voter was dropped: " + voterNameToDropParm);
+			serverUpdateListener.handleUpdateGenerated(serverUpdate);
+		}
+
+		return new ServerResponse();
+	}
+
+	/**
+	 * Remove a voter.
+	 * <p>
+	 * Use this method when a comm errors occurs for a specific voter, to remove the voter from the model.
+	 * 
+	 * @param voterNameToDropParm
+	 */
+	public void removeVoter(final String voterNameToDropParm) {
+		voterByName.remove(voterNameToDropParm);
+
+		final ServerUpdate serverUpdate = generateServerUpdate("A voter dropped because of comm errors: " + voterNameToDropParm);
+		serverUpdateListener.handleUpdateGenerated(serverUpdate);
+	}
+
 	/**
 	 * Check that the voter is joined.
 	 * 
@@ -241,29 +255,5 @@ public class Model {
 		 * @param serverUpdate required
 		 */
 		void handleUpdateGenerated(final ServerUpdate serverUpdate);
-	}
-
-	/**
-	 * This interface defines the contract for classes that listen for voter joined events.
-	 */
-	public interface VoterJoinedListener extends EventListener {
-		/**
-		 * Process a voter joined event.
-		 * 
-		 * @param voterName
-		 */
-		void handleVoterJoined(final String voterName);
-	}
-
-	/**
-	 * This interface defines the contract for classes that listen for voter left events.
-	 */
-	public interface VoterLeftListener extends EventListener {
-		/**
-		 * Process a voter left event.
-		 * 
-		 * @param voterName
-		 */
-		void handleVoterLeft(final String voterName);
 	}
 }

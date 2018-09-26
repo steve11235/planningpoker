@@ -15,11 +15,12 @@
   </p>
   <div class="floatWrapper">
     <span class="cell w10"><i>Voters</i></span>
-    <button class="cell" [ngClass]="calculateOffByClass(i, i)" [disabled]="!isVoteInProgress()" (click)="onVote(i)"
-      *ngFor="let voteLabel of voteLabels; let i = index;">{{voteLabel}}</button>
+    <button class="cell" [ngClass]="calculateOffByClass(i, i)" [disabled]="!isVoteInProgress()"
+      (click)="onVote(i)" *ngFor="let voteLabel of voteLabels; let i = index;">{{voteLabel}}</button>
   </div>
   <div class="floatWrapper" *ngFor="let voter of serverUpdate.voters">
     <span class="cell w10" [ngClass]="isYetToVote(voter) ? 'yetToVote' : ''">{{voter.name}}</span>
     <span class="cell" [ngClass]="calculateOffByClass(voter.vote, i)" *ngFor="let voteLabel of voteLabels; let i = index;">&nbsp;</span>
+    <button class="cell w2 symbol" (click)="onDropVoter(voter.name)">✗</button>
   </div>
 </div>

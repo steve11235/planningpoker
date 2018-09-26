@@ -55,18 +55,24 @@ public class CommunicationsServer {
 
 	private final ClientRequestListener clientRequestListener;
 	private final VoterConnectedListener voterConnectedListener;
+	private final VoterDroppedListener voterDroppedListener;
 	private final Selector selector;
 	private final Map<String, SocketChannel> webSocketByVoterName = new HashMap<>();
 
 	/** The next WebSocket connect request must specify this voter name */
 	private Set<String> connectPendingVoters = new HashSet<>();
 
-	public CommunicationsServer(final ClientRequestListener clientRequestListenerParm, final VoterConnectedListener voterConnectedListenerParm) {
+	public CommunicationsServer(
+			final ClientRequestListener clientRequestListenerParm, //
+			final VoterConnectedListener voterConnectedListenerParm, //
+			final VoterDroppedListener voterDroppedListenerParm) {
 		check(clientRequestListenerParm != null, "The ClientRequestListner may not be null.");
 		check(voterConnectedListenerParm != null, "The VoterConnectedListener may not be null.");
+		check(voterDroppedListenerParm != null, "The VoterDroppedListener may not be null.");
 
 		clientRequestListener = clientRequestListenerParm;
 		voterConnectedListener = voterConnectedListenerParm;
+		voterDroppedListener = voterDroppedListenerParm;
 
 		try {
 			selector = Selector.open();
@@ -124,6 +130,65 @@ public class CommunicationsServer {
 			LoggerUtility.logIssueWithStackTrace(LOG, "Fatal error in selector loop!", false, e);
 		} finally {
 			// Add close sockets logic here
+		}
+	}
+
+	/**
+	 * Broadcast the server update to all connected voters.
+	 * 
+	 * @param serverUpdateParm required
+	 */
+	public void broadcastServerUpdate(final ServerUpdate serverUpdateParm) {
+		check(serverUpdateParm != null, "The server update may not be null.");
+
+		final String serverUpdateJson = GSON.toJson(serverUpdateParm);
+		final WebSocketFrame webSocketFrame = new WebSocketFrame(true, WebSocketOpCode.TEXT, false,
+				serverUpdateJson.getBytes(StandardCharsets.UTF_8));
+
+		// Keep track of voters whose Web sockets failed for later removal
+		final Set<String> failedVoterNames = new HashSet<>();
+
+		for (Entry<String, SocketChannel> webSocketByVoterNameEntry : webSocketByVoterName.entrySet()) {
+			try {
+				SocketChannelUtility.writeToSocket(webSocketFrame.getReadOnlyBuffer(), webSocketByVoterNameEntry.getValue());
+			} catch (final CommException ce) {
+				failedVoterNames.add(webSocketByVoterNameEntry.getKey());
+			}
+		}
+
+		for (String failedVoterName : failedVoterNames) {
+			voterDroppedListener.handleVoterDropped(failedVoterName);
+		}
+	}
+
+	/**
+	 * Add a voter that is expecting a WebSocket connection.
+	 * 
+	 * @param voterNameParm
+	 */
+	public void addConnectPendingVoter(final String voterNameParm) {
+		connectPendingVoters.add(voterNameParm);
+	}
+
+	/**
+	 * Remove voter's WebSocket connection.
+	 * 
+	 * @param voterNameParm
+	 */
+	public void removeVoterWebSocket(final String voterNameParm) {
+		final SocketChannel socket = webSocketByVoterName.remove(voterNameParm);
+
+		final WebSocketFrame closeRequestFrame = new WebSocketFrame(true, WebSocketOpCode.CLOSE, false, new byte[0]);
+		try {
+			SocketChannelUtility.writeToSocket(closeRequestFrame.getReadOnlyBuffer(), socket);
+		} catch (final CommException ce) {
+			// Already logged, no further action
+			// We expect the write to fail if the voter is being removed cause of a bad socket
+		}
+		try {
+			socket.close();
+		} catch (final Exception e) {
+			// Do nothing
 		}
 	}
 
@@ -348,7 +413,8 @@ public class CommunicationsServer {
 			try {
 				HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content is missing.", socketParm);
 			} catch (final Exception e) {
-				e.printStackTrace();
+				LoggerUtility.logIssueWithStackTrace(LOG, "Unable to write body content missing response.", false, e);
+				;
 			}
 
 			return;
@@ -365,7 +431,8 @@ public class CommunicationsServer {
 				HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: Body content not recognized: " + bodyParm,
 						socketParm);
 			} catch (final Exception e1) {
-				e1.printStackTrace();
+				LoggerUtility.logIssueWithStackTrace(LOG, "Unable to write body content not recognized response.", false, e);
+				;
 			}
 
 			return;
@@ -376,9 +443,8 @@ public class CommunicationsServer {
 			try {
 				HttpUtility.writeToSocket("HTTP/1.1 400 Bad Request", ERROR_HEADERS, "400 Bad Request: " + errorMessage, socketParm);
 			} catch (final Exception e) {
-				e.printStackTrace();
-
-				removeConnectedVoter(clientRequest.getVoterName());
+				LoggerUtility.logIssueWithStackTrace(LOG, "Unable to write body content invalid response.", false, e);
+				;
 			}
 
 			return;
@@ -394,71 +460,10 @@ public class CommunicationsServer {
 		try {
 			HttpUtility.writeToSocket("HTTP/1.1 200 OK", headers, clientResponseJson, socketParm);
 		} catch (final Exception e) {
-			e.printStackTrace();
-
-			removeConnectedVoter(clientRequest.getVoterName());
+			LoggerUtility.logIssueWithStackTrace(LOG, "Unable to write OK response.", false, e);
 		}
 
 		return;
-	}
-
-	/**
-	 * Add a voter that is expecting a WebSocket connection.
-	 * 
-	 * @param voterNameParm
-	 */
-	public void addConnectPendingVoter(final String voterNameParm) {
-		connectPendingVoters.add(voterNameParm);
-	}
-
-	/**
-	 * Broadcast the server update to all connected voters.
-	 * 
-	 * @param serverUpdateParm required
-	 */
-	public void broadcastServerUpdate(final ServerUpdate serverUpdateParm) {
-		check(serverUpdateParm != null, "The server update may not be null.");
-
-		final String serverUpdateJson = GSON.toJson(serverUpdateParm);
-		final WebSocketFrame webSocketFrame = new WebSocketFrame(true, WebSocketOpCode.TEXT, false,
-				serverUpdateJson.getBytes(StandardCharsets.UTF_8));
-
-		// Keep track of voters whose Web sockets failed for later removal
-		final Set<String> failedVoterNames = new HashSet<>();
-
-		for (Entry<String, SocketChannel> webSocketByVoterNameEntry : webSocketByVoterName.entrySet()) {
-			try {
-				SocketChannelUtility.writeToSocket(webSocketFrame.getReadOnlyBuffer(), webSocketByVoterNameEntry.getValue());
-			} catch (final CommException ce) {
-				ce.printStackTrace();
-				failedVoterNames.add(webSocketByVoterNameEntry.getKey());
-			}
-		}
-
-		for (String failedVoterName : failedVoterNames) {
-			removeConnectedVoter(failedVoterName);
-		}
-	}
-
-	/**
-	 * Remove voter's WebSocket connection.
-	 * 
-	 * @param voterNameParm
-	 */
-	public void removeConnectedVoter(final String voterNameParm) {
-		final SocketChannel socket = webSocketByVoterName.remove(voterNameParm);
-
-		final WebSocketFrame closeRequestFrame = new WebSocketFrame(true, WebSocketOpCode.CLOSE, false, new byte[0]);
-		try {
-			SocketChannelUtility.writeToSocket(closeRequestFrame.getReadOnlyBuffer(), socket);
-		} catch (final CommException ce) {
-			ce.printStackTrace();
-		}
-		try {
-			socket.close();
-		} catch (final Exception e) {
-			// Do nothing
-		}
 	}
 
 	/**
@@ -476,13 +481,31 @@ public class CommunicationsServer {
 
 	/**
 	 * This interface defines the contract for classes that listen for voter connected events.
+	 * <p>
+	 * The model is not informed of a new voter until the WebSocket is established.
 	 */
 	public interface VoterConnectedListener extends EventListener {
 		/**
 		 * Process a voter connected event.
+		 * <p>
+		 * Voters connect by establishing WebSocket connection.
 		 * 
 		 * @param voterName required
 		 */
 		void handleVoterConnected(final String voterName);
+	}
+
+	/**
+	 * This interface defines the contract for classes that listen for voter dropped events. Dropped events are caused by comm failures.
+	 * <p>
+	 * Voter dropped involves closing the WebSocket and informing the model.
+	 */
+	public interface VoterDroppedListener extends EventListener {
+		/**
+		 * Process a voter dropped event.
+		 * 
+		 * @param voterName required
+		 */
+		void handleVoterDropped(final String voterName);
 	}
 }

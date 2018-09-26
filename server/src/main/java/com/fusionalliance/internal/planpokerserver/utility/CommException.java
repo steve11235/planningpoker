@@ -7,6 +7,11 @@ package com.fusionalliance.internal.planpokerserver.utility;
 public class CommException extends Exception {
 	private static final long serialVersionUID = 1L;
 
+	/**
+	 * Constructor
+	 * <p>
+	 * See class documentation {@link CommException}.
+	 */
 	public CommException() {
 		super("already logged");
 	}

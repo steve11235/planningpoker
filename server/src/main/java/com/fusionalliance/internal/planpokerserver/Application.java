@@ -9,10 +9,9 @@ import com.fusionalliance.internal.planpokerserver.vo.ServerUpdate;
 
 public class Application implements //
 		Model.ServerUpdateListener, //
-		Model.VoterJoinedListener, //
-		Model.VoterLeftListener, //
 		CommunicationsServer.ClientRequestListener, //
-		CommunicationsServer.VoterConnectedListener //
+		CommunicationsServer.VoterConnectedListener, //
+		CommunicationsServer.VoterDroppedListener //
 {
 	private static final Logger LOG = LoggerFactory.getLogger(Application.class);
 
@@ -24,8 +23,8 @@ public class Application implements //
 	private final CommunicationsServer communicationsServer;
 
 	public Application() {
-		model = new Model(this::handleVoterJoined, this::handleVoterLeft, this::handleUpdateGenerated);
-		communicationsServer = new CommunicationsServer(this::handleRequestReceived, this::handleVoterConnected);
+		model = new Model(this::handleUpdateGenerated);
+		communicationsServer = new CommunicationsServer(this::handleRequestReceived, this::handleVoterConnected, this::handleVoterDropped);
 	}
 
 	public void run() {
@@ -48,16 +47,6 @@ public class Application implements //
 	}
 
 	@Override
-	public void handleVoterJoined(final String voterNameParm) {
-		communicationsServer.addConnectPendingVoter(voterNameParm);
-	}
-
-	@Override
-	public void handleVoterLeft(final String voterNameParm) {
-		communicationsServer.removeConnectedVoter(voterNameParm);
-	}
-
-	@Override
 	public void handleUpdateGenerated(final ServerUpdate serverUpdateParm) {
 		communicationsServer.broadcastServerUpdate(serverUpdateParm);
 	}
@@ -65,10 +54,11 @@ public class Application implements //
 	@Override
 	public ServerResponse handleRequestReceived(final ClientRequest clientRequestParm) {
 		final ServerResponse serverResponse;
+		final String voterName = clientRequestParm.getVoterName();
 
 		switch (clientRequestParm.getRequestType()) {
 		case CANCEL_VOTE:
-			serverResponse = model.doCancelVote(clientRequestParm.getVoterName());
+			serverResponse = model.doCancelVote(voterName);
 
 			break;
 		case END_VOTE:
@@ -76,27 +66,41 @@ public class Application implements //
 
 			break;
 		case JOIN:
-			serverResponse = model.doJoin(clientRequestParm.getVoterName());
+			serverResponse = model.doJoin(voterName);
+
+			// model.doJoin() may detect a duplicate name
+			if (!serverResponse.isError()) {
+				communicationsServer.addConnectPendingVoter(voterName);
+			}
 
 			break;
 		case LEAVE:
-			serverResponse = model.doLeave(clientRequestParm.getVoterName());
+			serverResponse = model.doLeave(voterName);
 
 			break;
 		case REFRESH:
-			serverResponse = model.doRefresh(clientRequestParm.getVoterName());
+			serverResponse = model.doRefresh(voterName);
 
 			break;
 		case START_VOTE:
-			serverResponse = model.doStartVote(clientRequestParm.getVoterName());
+			serverResponse = model.doStartVote(voterName);
 
 			break;
 		case VOTE:
-			serverResponse = model.doVote(clientRequestParm.getVoterName(), clientRequestParm.getVote());
+			serverResponse = model.doVote(voterName, clientRequestParm.getVote());
+
+			break;
+		case DROP_VOTER:
+			serverResponse = model.doDropVoter(voterName, clientRequestParm.getInfo());
+
+			// model.doDropVoter() may find the voter was dropped already
+			if (!serverResponse.isError()) {
+				communicationsServer.removeVoterWebSocket(voterName);
+			}
 
 			break;
 		default:
-			// This can't happen
+			// This shouldn't happen
 			return new ServerResponse("Unknown request type.");
 		}
 
@@ -107,4 +111,11 @@ public class Application implements //
 	public void handleVoterConnected(final String voterNameParm) {
 		model.doConnected(voterNameParm);
 	}
+
+	@Override
+	public void handleVoterDropped(String voterNameParm) {
+		communicationsServer.removeVoterWebSocket(voterNameParm);
+		model.removeVoter(voterNameParm);
+	}
+
 }

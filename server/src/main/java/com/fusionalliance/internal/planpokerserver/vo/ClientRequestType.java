@@ -17,7 +17,7 @@ public enum ClientRequestType {
 	REFRESH, //
 	@SerializedName("leave")
 	LEAVE, //
-	@SerializedName("bump")
-	BUMP, //
+	@SerializedName("dropVoter")
+	DROP_VOTER, //
 	;
 }
